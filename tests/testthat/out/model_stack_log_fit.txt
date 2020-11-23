@@ -1,0 +1,16 @@
+> st_log_1__
+Message: -- A stacked ensemble model -------------------------------------
+
+Message: 
+Out of 10 possible candidate members, the ensemble retained 2.
+Lasso penalty: 1e-04.
+
+Message: 
+The 2 highest weighted member classes are:
+
+# A tibble: 2 x 3
+  member                    type        weight
+  <chr>                     <chr>        <dbl>
+1 .pred_yes_log_res_rf_1_03 rand_forest   5.75
+2 .pred_yes_log_res_rf_1_09 rand_forest   1.50
+
