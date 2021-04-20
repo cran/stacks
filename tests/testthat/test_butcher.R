@@ -1,6 +1,12 @@
 context("butcher")
 
-if ((!on_cran()) || interactive()) {load(test_path("helper_data.Rda"))}
+if ((!on_cran()) || interactive()) {
+  if (on_github()) {
+    load(paste0(Sys.getenv("GITHUB_WORKSPACE"), "/tests/testthat/helper_data.Rda"))
+  } else {
+    load(test_path("helper_data.Rda"))
+  }
+}
 
 # Unit testing for the component members would duplicate unit testing
 # from the butcher package. Since the desired functionality to test
@@ -8,9 +14,9 @@ if ((!on_cran()) || interactive()) {load(test_path("helper_data.Rda"))}
 test_axe <- function(st, fxn) {
   st_axed <- fxn(st)
   
-  expect_true(object.size(st) > object.size(st_axed))
-  expect_true(object.size(st[["coefs"]]) > object.size(st_axed[["coefs"]]))
-  expect_true(object.size(st[["member_fits"]]) > object.size(st_axed[["member_fits"]]))
+  expect_true(object.size(st) >= object.size(st_axed))
+  expect_true(object.size(st[["coefs"]]) >= object.size(st_axed[["coefs"]]))
+  expect_true(object.size(st[["member_fits"]]) >= object.size(st_axed[["member_fits"]]))
 }
 
 test_that("model_stack + axe_call() works", {
@@ -24,9 +30,26 @@ test_that("model_stack + axe_call() works", {
 test_that("model_stack + axe_ctrl() works", {
   skip_on_cran()
   
-  test_axe(st_reg_1__, axe_ctrl)
-  test_axe(st_class_1__, axe_ctrl)
-  test_axe(st_log_1__, axe_ctrl)
+  expect_true(
+    check_inherits(
+      axe_ctrl(st_reg_1__),
+      "butchered_linear_stack"
+    )
+  )
+  
+  expect_true(
+    check_inherits(
+      axe_ctrl(st_class_1__),
+      "butchered_linear_stack"
+    )
+  )
+  
+  expect_true(
+    check_inherits(
+      axe_ctrl(st_log_1__),
+      "butchered_linear_stack"
+    )
+  )
 })
 
 test_that("model_stack + axe_data() works", {

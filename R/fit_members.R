@@ -90,8 +90,7 @@ fit_members <- function(model_stack, ...) {
   metrics_dict <- 
     tibble::enframe(model_stack[["model_metrics"]]) %>%
     tidyr::unnest(cols = value) %>%
-    dplyr::mutate(.config = process_.config(.config, ., name = name)) %>%
-    dplyr::filter(.metric %in% c("rmse", "roc_auc"))
+    dplyr::mutate(.config = process_.config(.config, ., name = make.names(name)))
   
   if (model_stack[["mode"]] == "regression") {
     members_map <- 
@@ -140,7 +139,7 @@ fit_member <- function(name, wflows, members_map, train_dat) {
     dplyr::filter(value == name)
   
   member_params <- 
-    wflows[[member_row$name.x]] %>%
+    wflows[[member_row$name.x[1]]] %>%
     dials::parameters() %>%
     dplyr::pull(id)
   
@@ -149,7 +148,8 @@ fit_member <- function(name, wflows, members_map, train_dat) {
   if (needs_finalizing) {
     member_metrics <-
       members_map %>%
-      dplyr::filter(value == name)
+      dplyr::filter(value == name) %>%
+      dplyr::slice(1)
     
     member_wf <- 
       wflows[[member_metrics$name.x]]
@@ -199,6 +199,13 @@ sanitize_classification_names <- function(model_stack, member_names) {
 
 check_model_stack <- function(model_stack) {
   if (inherits(model_stack, "model_stack")) {
+    if (!is.null(model_stack[["member_fits"]])) {
+      glue_warn(
+        "The members in the supplied `model_stack` have already been fitted ",
+        "and need not be fitted again."
+      )
+    }
+    
     return(invisible(TRUE))
   } else if (inherits(model_stack, "data_stack")) {
     glue_stop(

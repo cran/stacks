@@ -1,6 +1,12 @@
 context("blend_predictions")
 
-if ((!on_cran()) || interactive()) {load(test_path("helper_data.Rda"))}
+if ((!on_cran()) || interactive()) {
+  if (on_github()) {
+    load(paste0(Sys.getenv("GITHUB_WORKSPACE"), "/tests/testthat/helper_data.Rda"))
+  } else {
+    load(test_path("helper_data.Rda"))
+  }
+}
 
 test_that("blend_predictions works", {
   skip_on_cran()
@@ -14,17 +20,19 @@ test_that("blend_predictions works", {
   expect_null(st_log_1_[["member_fits"]])
 })
 
-test_that("penalty argument works correctly", {
+test_that("penalty arguments work correctly", {
   skip_on_cran()
   
-  expect_true(check_inherits(st_reg_1 %>% blend_predictions(10^-2), "model_stack"))
-  expect_equal(
-    class(all.equal(
-      st_reg_1 %>% blend_predictions(10^-2),
-      st_reg_1 %>% blend_predictions(10^-3)
-    )), 
-    "character"
-  )
+  st_1 <- st_reg_1 %>% blend_predictions(penalty = 10^-2)
+  st_2 <- st_reg_1 %>% blend_predictions(penalty = 10^-3)
+  st_3 <- st_reg_1 %>% blend_predictions(penalty = 10^-2, mixture = .5)
+  
+  expect_true(check_inherits(st_1, "model_stack"))
+  expect_true(check_inherits(st_2, "model_stack"))
+  expect_true(check_inherits(st_3, "model_stack"))
+  
+  expect_equal(class(all.equal(st_1, st_2)), "character")
+  expect_equal(class(all.equal(st_1, st_3)), "character")
 })
 
 test_that("blend_predictions can handle many resample types", {
@@ -106,6 +114,11 @@ test_that("blend_predictions errors informatively with bad arguments", {
   expect_error(
     st_reg_1 %>% blend_predictions(penalty = -1),
     "supply only nonnegative values"
+  )
+  
+  expect_error(
+    st_reg_1 %>% blend_predictions(mixture = -1),
+    "supply only values in"
   )
   
   expect_error(

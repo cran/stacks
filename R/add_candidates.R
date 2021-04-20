@@ -82,9 +82,36 @@
 #' @export
 add_candidates <- function(data_stack, candidates,
                            name = deparse(substitute(candidates)), ...) {
+  UseMethod("add_candidates", object = candidates)
+}
+
+# check that resamples have been fitted to the workflow_set and
+# then send each to add_candidates.tune_results
+#' @export
+add_candidates.workflow_set <- function(data_stack, candidates, 
+                                        name = deparse(substitute(candidates)), 
+                                        ...) {
+  if (!"result" %in% colnames(candidates)) {
+    glue_stop(
+      "The supplied workflow_set must be fitted to resamples with ",
+      "workflows::workflow_map() before being added to a data stack."
+    )
+  }
+  
+  purrr::reduce2(
+    append(list(data_stack), candidates$result),
+    candidates$wflow_id,
+    add_candidates
+  )
+}
+
+#' @export
+add_candidates.tune_results <- function(data_stack, candidates, 
+                                        name = deparse(substitute(candidates)), 
+                                        ...) {
   check_add_data_stack(data_stack)
   check_candidates(candidates)
-  check_name(name)
+  col_name <- check_name(name)
   
   stack <- 
     data_stack %>%
@@ -94,9 +121,20 @@ add_candidates <- function(data_stack, candidates,
     .set_mode_(candidates, name) %>%
     .set_training_data(candidates, name) %>%
     .set_model_defs_candidates(candidates, name) %>%
-    .set_data_candidates(candidates, name)
+    .set_data_candidates(candidates, name, col_name)
   
   if (data_stack_constr(stack)) {stack}
+}
+
+#' @export
+add_candidates.default <- function(data_stack, candidates, name, ...) {
+  check_add_data_stack(data_stack)
+  
+  glue_stop(
+    "The second argument to add_candidates() should inherit from one of ",
+    "`tune_results` or `workflow_set`, but its class ",
+    "is {list(class(candidates))}."
+  )
 }
 
 .set_outcome <- function(stack, candidates) {
@@ -114,11 +152,7 @@ add_candidates <- function(data_stack, candidates,
 # checks that the hash for the resampling object
 # is appropriate and then sets it
 .set_rs_hash <- function(stack, candidates, name) {
-  if (".iter" %in% colnames(candidates)) {
-    new_hash <- digest::digest(candidates$splits[candidates$.iter == 0])
-  } else {
-    new_hash <- digest::digest(candidates$splits)
-  }
+  new_hash <- tune::.get_fingerprint(candidates)
   
   hash_matches <- .get_rs_hash(stack) %in% c("init_", new_hash)
   
@@ -171,6 +205,26 @@ add_candidates <- function(data_stack, candidates,
     )
   }
   
+  if (attr(stack, "mode") == "classification") {
+    # check to make sure that the candidates include a prob_metric so that
+    # collect_predictions won't supply only hard class predictions
+    metric_types <- candidates %>%
+      attributes() %>%
+      purrr::pluck("metrics") %>%
+      attributes() %>%
+      purrr::pluck("metrics") %>%
+      purrr::map_chr(~class(.x)[[1]]) %>%
+      unname()
+    
+    if (!"prob_metric" %in% metric_types) {
+      glue_stop(
+        "The supplied candidates were tuned/fitted using only metrics that ",
+        "rely on hard class predictions. Please tune/fit with at least one ",
+        "class probability-based metric, such as `yardstick::roc_auc()`."        
+      )
+    }
+  }
+  
   model_defs <- attr(stack, "model_defs")
   model_metrics <- attr(stack, "model_metrics")
   
@@ -202,9 +256,9 @@ add_candidates <- function(data_stack, candidates,
 }
 
 # appends assessment set predictions to a data stack
-.set_data_candidates <- function(stack, candidates, name) {
+.set_data_candidates <- function(stack, candidates, name, col_name) {
   candidate_cols <-
-    tune::collect_predictions(candidates, summarize = TRUE) %>%
+    collate_predictions(candidates) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(
       .config = if (".config" %in% names(.)) .config else NA_character_
@@ -216,7 +270,7 @@ add_candidates <- function(data_stack, candidates,
       .config
     ) %>%
     dplyr::mutate(
-      .config = process_.config(.config, df = ., name = name)
+      .config = process_.config(.config, df = ., name = col_name)
     ) %>%
     tidyr::pivot_wider(
       id_cols = c(".row", !!tune::.get_tune_outcome_names(candidates)), 
@@ -270,8 +324,14 @@ rm_duplicate_cols <- function(df) {
   exclude <- c(exclude, names(df[duplicated(purrr::map(df, c))]))
   
   if (length(exclude) > 0) {
+    if (length(exclude) > 1) {
+      n_candidates <- paste(length(exclude), "candidates")
+    } else {
+      n_candidates <- "1 candidate"
+    }
+    
     glue_warn(
-      "Predictions from the candidates {list(exclude)} were identical to ",
+      "Predictions from {n_candidates} were identical to ",
       "those from existing candidates and were removed from the data stack."
     )
     
@@ -317,9 +377,7 @@ stack_workflow <- function(x) {
 }
 
 check_add_data_stack <- function(data_stack) {
-  if (inherits(data_stack, "data_stack")) {
-    return(invisible(NULL))
-  } else if (rlang::inherits_any(
+  if (rlang::inherits_any(
     data_stack, 
     c("tune_results", "tune_bayes", "resample_results")
   )) {
@@ -368,7 +426,17 @@ check_name <- function(name) {
     )
   } else {
     check_inherits(name, "character")
+    
+    if (make.names(name) != name) {
+      glue_message(
+        "The inputted `name` argument cannot prefix a valid column name. The ", 
+        'data stack will use "{make.names(name)}" rather than "{name}" in ',
+        "constructing candidate names."
+      )
+    }
   }
+  
+  make.names(name)
 }
 
 # takes in the name a .config column and outputs the
@@ -397,4 +465,25 @@ process_.config <- function(.config, df, name) {
     )
   
   .config_
+}
+
+# For racing, we only want to keep the candidates with complete resamples. 
+collate_predictions <- function(x) {
+  res <- tune::collect_predictions(x, summarize = TRUE)
+  if (inherits(x, "tune_race")) {
+    config_counts <- 
+      tune::collect_metrics(x, summarize = FALSE) %>% 
+      dplyr::group_by(.config) %>% 
+      dplyr::count() %>% 
+      dplyr::ungroup()
+    # At least one configuration will always be fully resampled. We can filter
+    # on configurations that have the maximum number of resamples. 
+    complete_count <- max(config_counts$n, na.rm = TRUE)
+    retain_configs <- 
+      config_counts %>% 
+      dplyr::filter(n == complete_count) %>% 
+      dplyr::select(.config)
+    res <- dplyr::inner_join(res, retain_configs, by = ".config")
+  }
+  res
 }

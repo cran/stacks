@@ -7,6 +7,7 @@
 blend_predictions(
   data_stack,
   penalty = 10^(-6:-1),
+  mixture = 1,
   non_negative = TRUE,
   metric = NULL,
   control = tune::control_grid(),
@@ -16,10 +17,18 @@ blend_predictions(
 \arguments{
 \item{data_stack}{A \code{data_stack} object}
 
-\item{penalty}{A numeric vector of proposed penalty values used in member
-weighting. Higher penalties will generally result in fewer members
-being included in the resulting model stack, and vice versa. This argument
-will be tuned on unless a single penalty value is given.}
+\item{penalty}{A numeric vector of proposed values for total amount of
+regularization used in member weighting. Higher penalties will generally
+result in fewer members being included in the resulting model stack, and
+vice versa. The package will tune over a grid formed from the cross
+product of the \code{penalty} and \code{mixture} arguments.}
+
+\item{mixture}{A number between zero and one (inclusive) giving the
+proportion of L1 regularization (i.e. lasso) in the model. \code{mixture = 1}
+indicates a pure lasso model, \code{mixture = 0} indicates ridge regression, and
+values in \verb{(0, 1)} indicate an elastic net. The package will tune over
+a grid formed from the cross product of the \code{penalty} and \code{mixture}
+arguments.}
 
 \item{non_negative}{A logical giving whether to restrict stacking
 coefficients to non-negative values. If \code{TRUE} (default), 0 is passed as
@@ -58,6 +67,12 @@ Candidates with non-zero stacking coefficients are model stack
 members, and need to be trained on the full training set (rather
 than just the assessment set) with \code{\link[=fit_members]{fit_members()}}. This function
 is typically used after a number of calls to \code{\link[=add_candidates]{add_candidates()}}.
+}
+\details{
+Note that a regularized linear model is one of many possible
+learning algorithms that could be used to fit a stacked ensemble
+model. For implementations of additional ensemble learning algorithms, see
+\code{\link[h2o:h2o.stackedEnsemble]{h2o::h2o.stackedEnsemble()}} and \code{\link[SuperLearner:SuperLearner]{SuperLearner::SuperLearner()}}.
 }
 \section{Example Data}{
 

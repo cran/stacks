@@ -34,12 +34,44 @@ The process goes something like this:
     with `fit_members()`  
 6.  Predict on new data with `predict()`
 
-You can install the (unstable) development version of this package with
-the following code\!
+You can install the package with the following code:
+
+``` r
+install.packages("stacks")
+```
+
+Install the development version with:
 
 ``` r
 remotes::install_github("tidymodels/stacks", ref = "main")
 ```
+
+stacks is generalized with respect to:
+
+  - Model type: Any model type implemented in
+    [parsnip](https://parsnip.tidymodels.org/) or adjacent packages is
+    fair game to add to a stacks model stack.
+    [Here](https://www.tidymodels.org/find/parsnip/)’s a table of many
+    of the implemented model types in the tidymodels core, with a link
+    there to an article about implementing your own model classes as
+    well.
+  - Cross-validation scheme: Any resampling algorithm implemented in
+    [rsample](https://rsample.tidymodels.org/) or adjacent packages is
+    fair game for resampling data for use in training a model stack.
+  - Error metric: Any metric function implemented in
+    [yardstick](https://yardstick.tidymodels.org/) or adjacent packages
+    is fair game for evaluating model stacks and their members. That
+    package provides some infrastructure for creating your own metric
+    functions as well\!
+
+stacks uses a regularized linear model to combine predictions from
+ensemble members, though this model type is only one of many possible
+learning algorithms that could be used to fit a stacked ensemble model.
+For implementations of additional ensemble learning algorithms, check
+out
+[h2o](http://docs.h2o.ai/h2o/latest-stable/h2o-r/docs/reference/h2o.stackedEnsemble.html)
+and
+[SuperLearner](https://CRAN.R-project.org/package=SuperLearner).
 
 Rather than diving right into the implementation, we’ll focus here on
 how the pieces fit together, conceptually, in building an ensemble with
@@ -111,8 +143,9 @@ vignette for an example of how this grammar is implemented\!
 
 ## contributing
 
-This project is released with a [Contributor Code of Conduct](https://github.com/tidymodels/stacks/blob/main/CODE_OF_CONDUCT.md). By contributing to this project, you agree
-to abide by its terms.
+This project is released with a [Contributor Code of
+Conduct](https://github.com/tidymodels/stacks/blob/main/CODE_OF_CONDUCT.md).
+By contributing to this project, you agree to abide by its terms.
 
   - For questions and discussions about tidymodels packages, modeling,
     and machine learning, please [post on RStudio
@@ -122,8 +155,9 @@ to abide by its terms.
     issue](https://github.com/tidymodels/stacks/issues).
 
   - Either way, learn how to create and share a
-    [reprex](https://reprex.tidyverse.org/articles/articles/learn-reprex.html) (a minimal, reproducible example),
-    to clearly communicate about your code.
+    [reprex](https://reprex.tidyverse.org/articles/articles/learn-reprex.html)
+    (a minimal, reproducible example), to clearly communicate about your
+    code.
 
   - Check out further details on [contributing guidelines for tidymodels
     packages](https://www.tidymodels.org/contribute/) and [how to get

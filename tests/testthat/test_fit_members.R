@@ -1,6 +1,13 @@
 context("fit_members")
 
-if ((!on_cran()) || interactive()) {load(test_path("helper_data.Rda"))}
+if ((!on_cran()) || interactive()) {
+  if (on_github()) {
+    load(paste0(Sys.getenv("GITHUB_WORKSPACE"), "/tests/testthat/helper_data.Rda"))
+  } else {
+    load(test_path("helper_data.Rda"))
+  }
+}
+
 
 test_that("basic fit_members works", {
   skip_on_cran()
@@ -17,6 +24,20 @@ test_that("basic fit_members works", {
     st_log_1_ %>% fit_members()
   )
   
+  expect_message(
+    st_reg_bad_names <- stacks() %>% 
+      add_candidates(reg_res_svm, name = "name with spaces") %>%
+      blend_predictions() %>%
+      fit_members()
+  )
+  
+  expect_message(
+    st_class_bad_names <- stacks() %>% 
+      add_candidates(class_res_rf, name = "name with spaces") %>%
+      blend_predictions() %>%
+      fit_members()
+  )
+  
   # This is functionality that modeltime depends on.
   # Drop a note in #2 if this changes. :-)
   expect_false(!is.null(st_reg_1_[["member_fits"]]))
@@ -27,6 +48,9 @@ test_that("basic fit_members works", {
   
   expect_false(!is.null(st_log_1_[["member_fits"]]))
   expect_false( is.null(st_log_1__[["member_fits"]]))
+  
+  check_inherits(st_reg_bad_names, "linear_stack")
+  check_inherits(st_class_bad_names, "linear_stack")
 })
 
 test_that("fit_members leaves most model stack elements alone", {
@@ -80,5 +104,10 @@ test_that("fit_members errors informatively with a bad model_stack arg", {
   expect_error(
     "howdy" %>% fit_members(),
     "`model_stack` needs to inherit from `model_stack`"
+  )
+  
+  expect_warning(
+    st_reg_1__ %>% fit_members(),
+    "`model_stack` have already been fitted and need not"
   )
 })
