@@ -37,7 +37,7 @@ ggplot(tree_frogs) +
   geom_point() +
   labs(x = "Embryo Age (s)", y = "Time to Hatch (s)", col = "Treatment")
 
-## ---- echo = FALSE------------------------------------------------------------
+## ---- echo = FALSE, fig.alt = "A diagram representing 'model definitions,' which specify the form of candidate ensemble members. Three colored boxes represent three different model types; a K-nearest neighbors model (in salmon), a linear regression model (in yellow), and a support vector machine model (in green)."----
 knitr::include_graphics("https://raw.githubusercontent.com/tidymodels/stacks/main/man/figures/model_defs.png")
 
 ## -----------------------------------------------------------------------------
@@ -172,10 +172,10 @@ svm_res <-
 
 svm_res
 
-## ---- echo = FALSE------------------------------------------------------------
+## ---- echo = FALSE, fig.alt = "A diagram representing 'candidate members' generated from each model definition. Four salmon-colored boxes labeled 'KNN' represent K-nearest neighbors models trained on the resamples with differing hyperparameters. Similarly, the linear regression (LM) model generates one candidate member, and the support vector machine (SVM) model generates six."----
 knitr::include_graphics("https://raw.githubusercontent.com/tidymodels/stacks/main/man/figures/candidates.png")
 
-## ---- echo = FALSE------------------------------------------------------------
+## ---- echo = FALSE, fig.alt = "A diagram representing a 'data stack,' a specific kind of data frame. Colored 'columns' depict, in white, the true value of the outcome variable in the validation set, followed by four columns (in salmon) representing the predictions from the K-nearest neighbors model, one column (in tan) representing the linear regression model, and six (in green) representing the support vector machine model."----
 knitr::include_graphics("https://raw.githubusercontent.com/tidymodels/stacks/main/man/figures/data_stack.png")
 
 ## -----------------------------------------------------------------------------
@@ -198,7 +198,7 @@ tree_frogs_model_st <-
   tree_frogs_data_st %>%
   blend_predictions()
 
-## ---- echo = FALSE------------------------------------------------------------
+## ---- echo = FALSE, fig.alt = "A diagram representing 'stacking coefficients,' the coefficients of the linear model combining each of the candidate member predictions to generate the ensemble's ultimate prediction. Boxes for each of the candidate members are placed besides each other, filled in with color if the coefficient for the associated candidate member is nonzero."----
 knitr::include_graphics("https://raw.githubusercontent.com/tidymodels/stacks/main/man/figures/coefs.png")
 
 ## ----penalty-plot-------------------------------------------------------------
@@ -216,10 +216,10 @@ tree_frogs_model_st <-
   tree_frogs_model_st %>%
   fit_members()
 
-## ---- echo = FALSE------------------------------------------------------------
+## ---- echo = FALSE, fig.alt = "A diagram representing the ensemble members, where each are pentagons labeled and colored-in according to the candidate members they arose from."----
 knitr::include_graphics("https://raw.githubusercontent.com/tidymodels/stacks/main/man/figures/members.png")
 
-## ---- echo = FALSE------------------------------------------------------------
+## ---- echo = FALSE, fig.alt = "A diagram representing the 'model stack' class, which collates the stacking coefficients and members (candidate members with nonzero stacking coefficients that are trained on the full training set). The representation of the stacking coefficients and members is as before. Model stacks are a list subclass."----
 knitr::include_graphics("https://raw.githubusercontent.com/tidymodels/stacks/main/man/figures/class_model_stack.png")
 
 ## -----------------------------------------------------------------------------

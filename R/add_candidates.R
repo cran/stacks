@@ -184,7 +184,7 @@ add_candidates.default <- function(data_stack, candidates, name, ...) {
 .set_mode_ <- function(stack, candidates, name) {
   wf_spec <- 
     attr(candidates, "workflow") %>%
-    workflows::pull_workflow_spec()
+    workflows::extract_spec_parsnip()
   
   new_mode <- wf_spec$mode
   old_mode <- attr(stack, "mode")
@@ -363,14 +363,18 @@ update_stack_data <- function(stack, new_data) {
 stack_workflow <- function(x) {
   res <-
     workflows::workflow() %>%
-    workflows::add_model(workflows::pull_workflow_spec(x))
+    workflows::add_model(workflows::extract_spec_parsnip(x))
   
   pre <- workflows::pull_workflow_preprocessor(x)
   
   if (inherits(pre, "formula")) {
     res <- res %>% workflows::add_formula(pre)
-  } else {
+  } else if (inherits(pre, "recipe")) {
     res <- res %>% workflows::add_recipe(pre)
+  } else if (inherits(pre, "workflow_variables")) {
+    res <- res %>% workflows::add_variables(variables = pre)
+  } else {
+    rlang::abort(paste0("Can't add a preprocessor of class '", class(pre)[1], "'"))
   }
   
   res
