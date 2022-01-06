@@ -1,3 +1,13 @@
+# v0.2.2
+
+* Fixed errors arising from outcome levels that are not valid column 
+  names in the multinomial classification setting. 
+* Fixed `collect_parameters` failing to return stacking coefficients
+  in the two-class classification setting.
+* Regenerated example objects with updated {rsample} fingerprinting--saved 
+  model objects may need to be regenerated in order to build stacks combining
+  models generated before and after this update.
+
 # v0.2.1
 
 * Updates for importing workflow sets that use the `add_variables()` 
