@@ -34,7 +34,7 @@
 #' 
 #' @template note_example_data
 #' 
-#' @examples 
+#' @examplesIf rlang::is_installed("kernlab")
 #' \donttest{
 #' # see the "Example Data" section above for
 #' # clarification on the objects used in these examples!
@@ -82,6 +82,8 @@
 #' @export
 add_candidates <- function(data_stack, candidates,
                            name = deparse(substitute(candidates)), ...) {
+  check_empty_ellipses(...)
+  
   UseMethod("add_candidates", object = candidates)
 }
 
@@ -110,7 +112,7 @@ add_candidates.tune_results <- function(data_stack, candidates,
                                         name = deparse(substitute(candidates)), 
                                         ...) {
   check_add_data_stack(data_stack)
-  check_candidates(candidates)
+  check_candidates(candidates, name)
   col_name <- check_name(name)
   
   stack <- 
@@ -279,10 +281,9 @@ add_candidates.default <- function(data_stack, candidates, name, ...) {
     ) %>%
     dplyr::select(-.row) 
   
-  pred_class_idx <- grepl(pattern = ".pred_class", x = colnames(candidate_cols))
-  
-  candidate_cols <- candidate_cols[,!pred_class_idx] %>% 
-    setNames(., make.names(names(.)))
+  if (attr(stack, "mode") == "classification") {
+    candidate_cols <- remove_class_preds(candidate_cols)
+  }
   
   if (nrow(stack) == 0) {
     stack <- 
@@ -366,7 +367,7 @@ stack_workflow <- function(x) {
     workflows::workflow() %>%
     workflows::add_model(workflows::extract_spec_parsnip(x))
   
-  pre <- workflows::pull_workflow_preprocessor(x)
+  pre <- workflows::extract_preprocessor(x)
   
   if (inherits(pre, "formula")) {
     res <- res %>% workflows::add_formula(pre)
@@ -398,7 +399,7 @@ check_add_data_stack <- function(data_stack) {
   }
 }
 
-check_candidates <- function(candidates) {
+check_candidates <- function(candidates, name) {
   if (!rlang::inherits_any(
     candidates, 
     c("tune_results", "tune_bayes", "resample_results")
@@ -407,6 +408,14 @@ check_candidates <- function(candidates) {
       "The inputted `candidates` argument has class `{list(class(candidates))}`",
       ", but it should inherit from one of 'tune_results', 'tune_bayes', ",
       "or 'resample_results'."
+    )
+  }
+  
+  if (nrow(tune::collect_notes(candidates)) != 0) {
+    glue_warn(
+      "The inputted `candidates` argument `{name}` generated notes during ",
+      "tuning/resampling. Model stacking may fail due to these ",
+      "issues; see `?collect_notes` if so."
     )
   }
   
@@ -494,3 +503,23 @@ collate_predictions <- function(x) {
   }
   res
 }
+
+# given a set of candidate columns, removes those with hard class predictions
+remove_class_preds <- function(x) {
+  lvls <- levels(factor(x[[1]]))
+
+  # gather indices for the columns with class probability predictions
+  prob_preds_idx <- purrr::map(paste0(".pred_", lvls), grepl, x = colnames(x)) %>%
+    purrr::pmap(any) %>%
+    unlist()
+  
+  # select the columns that look like they have probability predictions,
+  # get rid of entries that would have been okayed because of an outcome
+  # level called "class", and re-attach the outcome column itself
+  x[,prob_preds_idx] %>%
+    dplyr::select(where(is.numeric)) %>% 
+    dplyr::bind_cols(x[,1], .) %>%
+    setNames(., make.names(names(.)))
+}
+
+

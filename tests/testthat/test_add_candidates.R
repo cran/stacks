@@ -1,5 +1,3 @@
-context("add_candidates")
-
 if ((!on_cran()) || interactive()) {
   if (on_github()) {
     load(paste0(Sys.getenv("GITHUB_WORKSPACE"), "/tests/testthat/helper_data.Rda"))
@@ -8,8 +6,20 @@ if ((!on_cran()) || interactive()) {
   }
 }
 
+skip_if_not_installed("modeldata")
+library(modeldata)
+
+skip_if_not_installed("ranger")
+library(ranger)
+
+skip_if_not_installed("kernlab")
+library(kernlab)
+
+skip_if_not_installed("nnet")
+library(nnet)
+
 test_that("stack can add candidates (regression)", {
-  skip("still some inconsistencies with stored objects")
+  skip_on_cran()
   
   expect_equal(
     st_0 %>% add_candidates(reg_res_svm),
@@ -27,7 +37,7 @@ test_that("stack can add candidates (regression)", {
 })
 
 test_that("stack can add candidates (multinomial classification)", {
-  skip("still some inconsistencies with stored objects")
+  skip_on_cran()
   
   expect_equal(
     st_0 %>% add_candidates(class_res_rf),
@@ -44,7 +54,7 @@ test_that("stack can add candidates (multinomial classification)", {
 })
 
 test_that("stack can add candidates (two-way classification)", {
-  skip("still some inconsistencies with stored objects")
+  skip_on_cran()
   
   expect_equal(
     st_0 %>% add_candidates(log_res_rf),
@@ -146,6 +156,7 @@ test_that("add_candidates errors informatively with bad arguments", {
     "not generated with the appropriate control settings"
   )
   
+  suppressWarnings(
   reg_res_lr_bad2 <- 
     tune::fit_resamples(
       object = reg_wf_lr,
@@ -156,6 +167,7 @@ test_that("add_candidates errors informatively with bad arguments", {
         save_workflow = TRUE
       )
     )
+  )
   
   expect_error(
     stacks() %>% add_candidates(reg_res_lr_bad2),
@@ -178,7 +190,7 @@ test_that("add_candidates errors informatively with bad arguments", {
   
   # use a metric that only relies on hard class prediction
   log_res <- 
-    tune_grid(
+    tune::tune_grid(
       workflows::workflow() %>%
         workflows::add_formula(z ~ x + y) %>%
         workflows::add_model(
@@ -191,13 +203,16 @@ test_that("add_candidates errors informatively with bad arguments", {
       rsample::vfold_cv(dat, v = 4),
       grid = 4,
       control = control_stack_grid(),
-      metrics = yardstick::metric_set(accuracy)
+      metrics = yardstick::metric_set(yardstick::accuracy)
     )
   
   expect_error(
     stacks() %>% add_candidates(log_res),
     "only metrics that rely on hard class predictions"
   )
+  
+  # warn when stacking may fail due to tuning failure
+  # TODO: re-implement tests--devel tune now errors on previous failure
 })
 
 test_that("model definition naming works as expected", {
@@ -250,5 +265,31 @@ test_that("model definition naming works as expected", {
       stacks() %>%
       add_candidates(reg_res_svm, name = "beep bop"),
     "cannot prefix a valid column name"
+  )
+})
+
+test_that("stacks can handle columns and levels named 'class'", {
+  # waiting on https://github.com/tidymodels/tune/issues/487
+  # to be able to test with entry "class"
+  x <- tibble::tibble(
+    class = sample(c("class_1", "class_2"), 100, replace = TRUE),
+    a = rnorm(100),
+    b = rnorm(100)
+  )
+  
+  res <- tune::tune_grid(
+    parsnip::logistic_reg(engine = 'glmnet', penalty = tune::tune(), mixture = 1),
+    preprocessor = recipes::recipe(class ~ ., x),
+    resamples = rsample::vfold_cv(x, 2),
+    grid = 2,
+    control = control_stack_grid()
+  )
+  
+  expect_s3_class(
+    suppressWarnings(
+      stacks() %>% 
+        add_candidates(res)
+    ),
+    "data_stack"
   )
 })

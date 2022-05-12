@@ -1,5 +1,3 @@
-context("blend_predictions")
-
 if ((!on_cran()) || interactive()) {
   if (on_github()) {
     load(paste0(Sys.getenv("GITHUB_WORKSPACE"), "/tests/testthat/helper_data.Rda"))
@@ -7,6 +5,18 @@ if ((!on_cran()) || interactive()) {
     load(test_path("helper_data.Rda"))
   }
 }
+
+skip_if_not_installed("modeldata")
+library(modeldata)
+
+skip_if_not_installed("ranger")
+library(ranger)
+
+skip_if_not_installed("kernlab")
+library(kernlab)
+
+skip_if_not_installed("nnet")
+library(nnet)
 
 test_that("blend_predictions works", {
   skip_on_cran()
@@ -156,6 +166,14 @@ test_that("blend_predictions is sensitive to the metric argument", {
   )
 })
 
+test_that("blend_predictions is sensitive to the times argument", {
+  skip_on_cran()
+  
+  times_5 <- st_reg_1 %>% blend_predictions(times = 5)
+  
+  expect_equal(length(times_5[["splits"]][["splits"]]), 5)
+})
+
 test_that("process_data_stack works", {
   skip_on_cran()
   
@@ -172,5 +190,19 @@ test_that("process_data_stack works", {
   expect_error(
     process_data_stack(data.frame(a = rep(NA, 5))),
     "All rows in the data stack"
+  )
+})
+
+test_that("coef environments are small (#116)", {
+  skip_on_cran()
+  
+  expect_equal(
+    st_reg_1_$coefs$spec$eng_arg$lower.limits,
+    rlang::new_quosure(0, env = rlang::empty_env())
+  )
+  
+  expect_equal(
+    attr(st_reg_1_$coefs$preproc$terms, ".Environment"), 
+    rlang::base_env()
   )
 })

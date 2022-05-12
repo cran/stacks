@@ -46,6 +46,9 @@
 #'   the model determining stacking coefficients. See [tune::control_grid()]
 #'   documentation for details on possible values. Note that any `extract`
 #'   entry will be overwritten internally.
+#' @param times Number of bootstrap samples tuned over by the model that
+#'   determines stacking coefficients. See [rsample::bootstraps()] to
+#'   learn more.
 #' @inheritParams add_candidates
 #' 
 #' @return A `model_stack` object—while `model_stack`s largely contain the
@@ -54,7 +57,7 @@
 #' 
 #' @template note_example_data
 #' 
-#' @examples 
+#' @examplesIf rlang::is_installed("kernlab")
 #' \donttest{
 #' # see the "Example Data" section above for
 #' # clarification on the objects used in these examples!
@@ -91,6 +94,11 @@
 #'   blend_predictions(
 #'     control = tune::control_grid(allow_par = TRUE)
 #'   )
+#'  
+#' # to speed up the stacking process for preliminary
+#' # results, bump down the `times` argument:
+#' reg_st %>% 
+#'   blend_predictions(times = 5)
 #'   
 #' # the process looks the same with 
 #' # multinomial classification models
@@ -120,6 +128,7 @@ blend_predictions <- function(data_stack,
                               non_negative = TRUE, 
                               metric = NULL,
                               control = tune::control_grid(), 
+                              times = 25,
                               ...) {
   check_inherits(data_stack, "data_stack")
   check_blend_data_stack(data_stack)
@@ -130,12 +139,13 @@ blend_predictions <- function(data_stack,
     check_inherits(metric, "metric_set")
   }
   check_inherits(control, "control_grid")
+  check_inherits(times, "numeric")
+  check_empty_ellipses(...)
   
   outcome <- attr(data_stack, "outcome")
-  
-  preds_formula <- 
-    paste0(outcome, " ~ .") %>%
-    as.formula()
+
+  preds_formula <-
+    rlang::new_formula(as.name(outcome), as.name("."), env = rlang::base_env())
   
   lvls <- levels(data_stack[[outcome]])
   
@@ -143,10 +153,12 @@ blend_predictions <- function(data_stack,
   
   ll <- if (non_negative) {0} else {-Inf}
   
+  tune_quo <- rlang::new_quosure(tune::tune(), env = rlang::empty_env())
+  
   if (attr(data_stack, "mode") == "regression") {
     model_spec <- 
-      parsnip::linear_reg(penalty = tune::tune(), mixture = tune::tune()) %>%
-      parsnip::set_engine("glmnet", lower.limits = ll, lambda.min.ratio = 0)
+      parsnip::linear_reg(penalty = !!tune_quo, mixture = !!tune_quo) %>%
+      parsnip::set_engine("glmnet", lower.limits = !!ll, lambda.min.ratio = 0)
     
     preds_wf <-
       workflows::workflow() %>%
@@ -159,13 +171,13 @@ blend_predictions <- function(data_stack,
     dat <- dat %>% dplyr::select(-dplyr::starts_with(!!col_filter))
     if (length(lvls) == 2) {
       model_spec <-
-        parsnip::logistic_reg(penalty = tune::tune(), mixture = tune::tune()) %>% 
-        parsnip::set_engine("glmnet", lower.limits = ll, lambda.min.ratio = 0) %>% 
+        parsnip::logistic_reg(penalty = !!tune_quo, mixture = !!tune_quo) %>% 
+        parsnip::set_engine("glmnet", lower.limits = !!ll, lambda.min.ratio = 0) %>% 
         parsnip::set_mode("classification")
     } else {
       model_spec <-
-        parsnip::multinom_reg(penalty = tune::tune(), mixture = tune::tune()) %>% 
-        parsnip::set_engine("glmnet", lower.limits = ll, lambda.min.ratio = 0) %>% 
+        parsnip::multinom_reg(penalty = !!tune_quo, mixture = !!tune_quo) %>% 
+        parsnip::set_engine("glmnet", lower.limits = !!ll, lambda.min.ratio = 0) %>% 
         parsnip::set_mode("classification")
     }
     
@@ -182,7 +194,7 @@ blend_predictions <- function(data_stack,
   
   get_models <- function(x) {
     x %>% 
-      workflows::pull_workflow_fit() %>% 
+      workflows::extract_fit_parsnip() %>% 
       purrr::pluck("fit")
   }
   
@@ -191,7 +203,7 @@ blend_predictions <- function(data_stack,
   candidates <- 
     preds_wf %>%
     tune::tune_grid(
-      resamples = rsample::bootstraps(dat),
+      resamples = rsample::bootstraps(dat, times = times),
       grid = purrr::cross_df(
         list(
           penalty = penalty,
@@ -207,7 +219,7 @@ blend_predictions <- function(data_stack,
   coefs <-
     model_spec %>%
     tune::finalize_model(best_param) %>%
-    generics::fit(formula = preds_formula, data = dat)
+    parsnip::fit(formula = preds_formula, data = dat)
 
   model_stack <- 
     structure(

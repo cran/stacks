@@ -1,5 +1,3 @@
-context("autoplot")
-
 if ((!on_cran()) || interactive()) {
   if (on_github()) {
     load(paste0(Sys.getenv("GITHUB_WORKSPACE"), "/tests/testthat/helper_data.Rda"))
@@ -7,6 +5,18 @@ if ((!on_cran()) || interactive()) {
     load(test_path("helper_data.Rda"))
   }
 }
+
+skip_if_not_installed("modeldata")
+library(modeldata)
+
+skip_if_not_installed("ranger")
+library(ranger)
+
+skip_if_not_installed("kernlab")
+library(kernlab)
+
+skip_if_not_installed("nnet")
+library(nnet)
 
 # ------------------------------------------------------------------------------
 

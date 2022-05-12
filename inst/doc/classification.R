@@ -21,6 +21,19 @@ library(purrr)
 library(dplyr)
 library(tidyr)
 
+## ---- include = FALSE---------------------------------------------------------
+if (rlang::is_installed("ranger") && 
+    rlang::is_installed("nnet") &&
+    rlang::is_installed("kernlab")) {
+  run <- TRUE
+} else {
+  run <- FALSE
+}
+
+knitr::opts_chunk$set(
+  eval = run
+)
+
 ## ---- message = FALSE, warning = FALSE----------------------------------------
 data("tree_frogs")
 

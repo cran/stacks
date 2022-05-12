@@ -75,7 +75,10 @@ the source code that generated them.
 }
 
 \examples{
+\dontshow{if (rlang::is_installed("ranger") & rlang::is_installed("kernlab")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+
 \donttest{
+
 # see the "Example Data" section above for
 # clarification on the objects used in these examples!
 
@@ -114,8 +117,9 @@ log_st <-
   fit_members()
   
 log_st
-}
 
+}
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 Other core verbs: 

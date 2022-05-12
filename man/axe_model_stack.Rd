@@ -45,7 +45,10 @@ Remove environments.
 Remove fitted values.
 }
 \examples{
+\dontshow{if (rlang::is_installed("ranger") & rlang::is_installed("kernlab")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+
 \donttest{
+
 # build a regression model stack
 st <-
   stacks() \%>\%
@@ -67,5 +70,7 @@ butchered_st <- butcher(st, verbose = TRUE)
 
 format(object.size(st))
 format(object.size(butchered_st))
+
 }
+\dontshow{\}) # examplesIf}
 }

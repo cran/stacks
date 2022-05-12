@@ -17,7 +17,7 @@
 #' 
 #' @template note_example_data
 #' 
-#' @examples 
+#' @examplesIf rlang::is_installed("kernlab")
 #' \donttest{
 #' # see the "Example Data" section above for
 #' # clarification on the objects used in these examples!
@@ -88,7 +88,7 @@ collect_params <- function(cols_map, model_metrics, candidates, workflows, blend
   
   params <-
     workflows[[candidates]] %>%
-    dials::parameters() %>%
+    parsnip::extract_parameter_set_dials() %>%
     dplyr::pull(id)
   
   res <-

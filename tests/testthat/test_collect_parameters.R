@@ -1,5 +1,3 @@
-context("collect_parameters")
-
 if ((!on_cran()) || interactive()) {
   if (on_github()) {
     load(paste0(Sys.getenv("GITHUB_WORKSPACE"), "/tests/testthat/helper_data.Rda"))
@@ -7,6 +5,18 @@ if ((!on_cran()) || interactive()) {
     load(test_path("helper_data.Rda"))
   }
 }
+
+skip_if_not_installed("modeldata")
+library(modeldata)
+
+skip_if_not_installed("ranger")
+library(ranger)
+
+skip_if_not_installed("kernlab")
+library(kernlab)
+
+skip_if_not_installed("nnet")
+library(nnet)
 
 test_that("collect_parameters dispatch works", {
   skip_on_cran()
@@ -78,7 +88,7 @@ test_that("collect_parameters on a model stack works (regression)", {
   expect_true(
     all(
       c("member", 
-        dials::parameters(st_reg_1_$model_defs$reg_res_svm) %>% pull(id), 
+        parsnip::extract_parameter_set_dials(st_reg_1_$model_defs$reg_res_svm) %>% dplyr::pull(id), 
         "coef") %in% 
       colnames(res)
     )

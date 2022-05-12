@@ -48,7 +48,8 @@ utils::globalVariables(c(
   "type",
   "value",
   "weight",
-  "weighted_est"
+  "weighted_est",
+  "where"
 ))
 
 # Checks and Prompts
@@ -98,9 +99,28 @@ color_prompt <- function(prompt, type) {
 # it with the appropriate tune color, and raises it with the appropriate prompt
 glue_prompt <- function(..., .sep = "", .envir = parent.frame(), type, rlang_fn) {
   glue::glue(..., .sep = .sep, .envir = .envir) %>%
-    strwrap() %>%
+    glue::glue_collapse() %>%
     color_prompt(type) %>%
     rlang_fn()
+}
+
+# adapted from tune
+check_empty_ellipses <- function(...) {
+  dots <- rlang::enquos(...)
+  if (length(dots) > 0) {
+    needs_name <- names(dots) == ""
+    names(dots)[needs_name] <- 
+      dots[needs_name] %>%
+      purrr::map(
+        rlang::get_expr
+      ) %>%
+      unlist()
+    
+    msg <- "The `...` are not used in this function but one or more arguments were passed: "
+    msg <- paste0(msg, paste0("'", names(dots), "'", collapse = ", "))
+    rlang::warn(msg)
+  }
+  invisible(NULL)
 }
 
 check_inherits <- function(x, what) {
@@ -150,3 +170,9 @@ check_inherits <- function(x, what) {
   }
   x
 }
+
+# quiet R-CMD-check NOTEs that workflowsets and yardstick are unused
+# (see example data .Rmds for usage)
+#' @importFrom yardstick metric_set
+#' @importFrom workflowsets workflow_set
+NULL
