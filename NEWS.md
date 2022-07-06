@@ -1,20 +1,42 @@
+# stacks 1.0.0
+
+stacks 1.0.0 is the first production release of the package. While this release
+includes only a few minor bug fixes, it's accompanied by a white paper
+recently published in the Journal of Open Source software. You can read
+that paper [here](https://doi.org/10.21105/joss.04471)!
+
+This release:
+
+* Addresses re-introduction of a bug arising from outcome levels that are not 
+  valid column names in the multinomial classification setting (#133). 
+* Fixes bug where stacks will return incorrect predictions if an elastic net
+  meta-learner is used, the `type` argument to `predict` is set to `"class"`, 
+  and the outcome levels differ from alphabetical order.
+* Transitions package internals from functions deprecated from the recipes package.
+
+# stacks 0.2.4 (GitHub only)
+
+This is a GitHub-only release and does not change package source code. This 
+update includes a `data-raw/paper` subdirectory containing source for a 
+contributed paper to the Journal of Open Source Software.
+
 # stacks 0.2.3
 
 * Addressed deprecation warning in `add_candidates` (#99).
 * Improved clarity of warnings/errors related to failed hyperparameter 
-tuning and resample fitting (#110).
+  tuning and resample fitting (#110).
 * Reduced model stack object size and fixed bug where object size of model stack 
-inflated drastically after saving to file (#116). Also, regenerated example objects 
-with this change--saved model objects may need to be regenerated in order to 
-interface with newer versions of the package.
+  inflated drastically after saving to file (#116). Also, regenerated example objects 
+  with this change--saved model objects may need to be regenerated in order to 
+  interface with newer versions of the package.
 * Introduced a `times` argument to `blend_predictions` that is passed on to
-`rsample::bootstraps` when fitting stacking coefficients. Reducing this
-argument from its default (`25`) greatly reduces the run time of 
-`blend_predictions` (#94).
+  `rsample::bootstraps` when fitting stacking coefficients. Reducing this
+  argument from its default (`25`) greatly reduces the run time of 
+  `blend_predictions` (#94).
 * The package will now load packages necessary for model fitting at 
-`fit_members()`, if available, and fail informatively if not (#118).
+  `fit_members()`, if available, and fail informatively if not (#118).
 * Fixed bug where meta-learner tuning would fail with outcome names and levels
-including the string `"class"` (#125).
+  including the string `"class"` (#125).
 
 # stacks 0.2.2
 

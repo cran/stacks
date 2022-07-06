@@ -89,7 +89,7 @@ knn_rec <-
   tree_frogs_rec %>%
   step_dummy(all_nominal()) %>%
   step_zv(all_predictors(), skip = TRUE) %>%
-  step_meanimpute(all_numeric(), skip = TRUE) %>%
+  step_impute_mean(all_numeric(), skip = TRUE) %>%
   step_normalize(all_numeric(), skip = TRUE)
 
 knn_rec
@@ -162,7 +162,7 @@ svm_rec <-
   tree_frogs_rec %>%
   step_dummy(all_nominal()) %>%
   step_zv(all_predictors(), skip = TRUE) %>%
-  step_meanimpute(all_numeric(), skip = TRUE) %>%
+  step_impute_mean(all_numeric(), skip = TRUE) %>%
   step_corr(all_predictors(), skip = TRUE) %>%
   step_normalize(all_numeric(), skip = TRUE)
 
