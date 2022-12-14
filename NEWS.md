@@ -1,3 +1,28 @@
+# stacks 1.0.1
+
+* Removes an unneeded data import attribute from the `tree_frogs` example data 
+  and its associated objects (#148).
+  
+* `blend_predictions()` doesn't error anymore if the `control` argument isn't a 
+  `control_grid` object. As long as the object passed to `control` 
+  include the same elements as `control_grid()` output, 
+  `parsnip::condense_control()` will handle input (#149).
+  
+* Tightened integration with the workflowsets package (#161, #165).
+    - Refined logic with adding candidates via workflowsets to allow for 
+      partially trained workflow sets. In the case that a workflow set contains 
+      some failed tuning results, stacks will inform the user that they will be 
+      excluded from the data stack and only add the results that trained successfully.
+    - Extended documentation related to the packages' interactions, including 
+      a [new article](https://stacks.tidymodels.org/dev/articles/workflowsets.html) 
+      on the package website.
+
+* Revamped errors, warnings, and messages. Prompts now provide more thorough 
+  context about where they arose, include more extensive references to 
+  documentation, and are correctly pluralized (#150, #167).
+  
+* Various bug fixes and improvements to documentation.
+
 # stacks 1.0.0
 
 stacks 1.0.0 is the first production release of the package. While this release

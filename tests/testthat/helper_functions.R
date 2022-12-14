@@ -8,18 +8,6 @@ ncol_with_name <- function(data_stack, substring) {
     ncol()
 }
 
-# copied from utils
-check_inherits <- function(x, what) {
-  cl <- match.call()
-  
-  if (!inherits(x, what)) {
-    glue_stop("Element `{list(cl$x)}` needs to inherit from `{what}`, but its ",
-              "class is `{list(class(x))}`.")
-  }
-  
-  invisible(TRUE)
-}
-
 # Helper Data 
 # -----------------------------------------------------------------------
 # the `helper_data.Rda` contains data objects for use in unit testing.
@@ -46,6 +34,3 @@ on_github <- function() {
 on_cran <- function() {
   !identical(Sys.getenv("NOT_CRAN"), "true")
 }
-
-# robustly test for prompt outputs without line breaks
-options(width = 1000)

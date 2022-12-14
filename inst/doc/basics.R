@@ -7,8 +7,6 @@ knitr::opts_chunk$set(
 ## ----setup, eval = FALSE------------------------------------------------------
 #  library(tidymodels)
 #  library(stacks)
-#  library(dplyr)
-#  library(purrr)
 
 ## ----packages, include = FALSE------------------------------------------------
 library(tune)
@@ -20,6 +18,7 @@ library(yardstick)
 library(stacks)
 library(dplyr)
 library(purrr)
+library(ggplot2)
 
 ## ---- include = FALSE---------------------------------------------------------
 if (rlang::is_installed("ranger") && 
@@ -42,8 +41,8 @@ tree_frogs <- tree_frogs %>%
   filter(!is.na(latency)) %>%
   select(-c(clutch, hatched))
 
-## ---- message = FALSE, warning = FALSE----------------------------------------
-library(ggplot2)
+## ---- message = FALSE, warning = FALSE, fig.alt = "A ggplot scatterplot with embryo age in seconds on the x axis, time to hatch on the y axis, and points colored by treatment. The ages range from 350,000 to 500,000 seconds, while the times to hatch range from 0 to 450 seconds. There are two treatments—control and gentamicin—and the time to hatch is generally larger for the gentamicin group. The embryo ages are generally distributed in three clouds, where the older embryos tend to hatch more quickly after stimulus than the younger ones."----
+theme_set(theme_bw())
 
 ggplot(tree_frogs) +
   aes(x = age, y = latency, color = treatment) +
@@ -87,10 +86,10 @@ knn_spec
 # extend the recipe
 knn_rec <-
   tree_frogs_rec %>%
-  step_dummy(all_nominal()) %>%
-  step_zv(all_predictors(), skip = TRUE) %>%
-  step_impute_mean(all_numeric(), skip = TRUE) %>%
-  step_normalize(all_numeric(), skip = TRUE)
+  step_dummy(all_nominal_predictors()) %>%
+  step_zv(all_predictors()) %>%
+  step_impute_mean(all_numeric_predictors()) %>%
+  step_normalize(all_numeric_predictors())
 
 knn_rec
 
@@ -126,8 +125,8 @@ lin_reg_spec <-
 # extend the recipe
 lin_reg_rec <-
   tree_frogs_rec %>%
-  step_dummy(all_nominal()) %>%
-  step_zv(all_predictors(), skip = TRUE)
+  step_dummy(all_nominal_predictors()) %>%
+  step_zv(all_predictors())
 
 # add both to a workflow
 lin_reg_wflow <- 
@@ -160,11 +159,11 @@ svm_spec <-
 # extend the recipe
 svm_rec <-
   tree_frogs_rec %>%
-  step_dummy(all_nominal()) %>%
-  step_zv(all_predictors(), skip = TRUE) %>%
-  step_impute_mean(all_numeric(), skip = TRUE) %>%
-  step_corr(all_predictors(), skip = TRUE) %>%
-  step_normalize(all_numeric(), skip = TRUE)
+  step_dummy(all_nominal_predictors()) %>%
+  step_zv(all_predictors()) %>%
+  step_impute_mean(all_numeric_predictors()) %>%
+  step_corr(all_predictors()) %>%
+  step_normalize(all_numeric_predictors())
 
 # add both to a workflow
 svm_wflow <- 
@@ -215,19 +214,23 @@ tree_frogs_model_st <-
 knitr::include_graphics("https://raw.githubusercontent.com/tidymodels/stacks/main/man/figures/coefs.png")
 
 ## ----penalty-plot-------------------------------------------------------------
-theme_set(theme_bw())
 autoplot(tree_frogs_model_st)
 
-## ----members-plot-------------------------------------------------------------
+## ----members-plot, fig.alt = "A ggplot line plot. The x axis shows the degree of penalization, ranging from 1e-06 to 1e-01, and the y axis displays the mean of three different metrics. The plots are faceted by metric type, with three facets: number of members, root mean squared error, and R squared. The plots generally show that, as penalization increases, the error decreases. There are very few proposed members in this example, so penalization doesn't drive down the number of members much at all. In this case, then, a larger penalty is acceptable."----
 autoplot(tree_frogs_model_st, type = "members")
 
-## ----weight-plot--------------------------------------------------------------
+## ----weight-plot, fig.alt = "A ggplot bar plot, giving the stacking coefficient on the x axis and member on the y axis. There are three members in this ensemble, where a nearest neighbor is weighted most heavily, followed by a linear regression with a stacking coefficient about half as large, followed by a support vector machine with a very small contribution."----
 autoplot(tree_frogs_model_st, type = "weights")
 
 ## -----------------------------------------------------------------------------
 tree_frogs_model_st <-
   tree_frogs_model_st %>%
   fit_members()
+
+## ---- eval = FALSE, include = FALSE-------------------------------------------
+#  st_print <- capture.output(print(tree_frogs_model_st))
+#  
+#  writeLines(st_print, con = "inst/figs/st_print.txt")
 
 ## ---- echo = FALSE, fig.alt = "A diagram representing the ensemble members, where each are pentagons labeled and colored-in according to the candidate members they arose from."----
 knitr::include_graphics("https://raw.githubusercontent.com/tidymodels/stacks/main/man/figures/members.png")
@@ -243,7 +246,7 @@ tree_frogs_test <-
   tree_frogs_test %>%
   bind_cols(predict(tree_frogs_model_st, .))
 
-## -----------------------------------------------------------------------------
+## ---- fig.alt = "A ggplot scatterplot showing observed versus predicted latency values. While there is indeed a positive and roughly linear relationship, there is certainly patterned structure in the residuals."----
 ggplot(tree_frogs_test) +
   aes(x = latency, 
       y = .pred) +

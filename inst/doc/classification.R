@@ -6,7 +6,6 @@ knitr::opts_chunk$set(
 
 ## ----setup, eval = FALSE------------------------------------------------------
 #  library(tidymodels)
-#  library(tidyverse)
 #  library(stacks)
 
 ## ----packages, include = FALSE------------------------------------------------
@@ -20,6 +19,7 @@ library(stacks)
 library(purrr)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 
 ## ---- include = FALSE---------------------------------------------------------
 if (rlang::is_installed("ranger") && 
@@ -41,8 +41,8 @@ data("tree_frogs")
 tree_frogs <- tree_frogs %>%
   select(-c(clutch, latency))
 
-## ---- message = FALSE, warning = FALSE----------------------------------------
-library(ggplot2)
+## ---- message = FALSE, warning = FALSE, fig.alt = "A ggplot scatterplot with categorical variable treatment, embryo age in seconds on the y axis, and points colored by response. The ages range from 350,000 to 500,000 seconds, and the two treatments are control and gentamicin. There are three responses: low, mid, and full. All of the embryos beyond a certain age have a full response, while the low and mid responses are well-intermixed regardless of age or treatment."----
+theme_set(theme_bw())
 
 ggplot(tree_frogs) +
   aes(x = treatment, y = age, color = reflex) +
@@ -63,7 +63,7 @@ folds <- rsample::vfold_cv(tree_frogs_train, v = 5)
 
 tree_frogs_rec <- 
   recipe(reflex ~ ., data = tree_frogs_train) %>%
-  step_dummy(all_nominal(), -reflex) %>%
+  step_dummy(all_nominal_predictors(), -reflex) %>%
   step_zv(all_predictors())
 
 tree_frogs_wflow <- 
@@ -131,14 +131,13 @@ tree_frogs_model_st <-
 
 tree_frogs_model_st
 
-## ----penalty-plot-------------------------------------------------------------
-theme_set(theme_bw())
+## ----penalty-plot, fig.alt = "A ggplot line plot. The x axis shows the degree of penalization, ranging from 1e-06 to 1e-01, and the y axis displays the mean of three different metrics. The plots are faceted by metric type, with three facets: accuracy, number of members, and ROC AUC. The plots generally show that, as penalization increases, the error increases, though fewer members are included in the model. A dashed line at a penalty of 1e-05 indicates that the stack has chosen a smaller degree of penalization."----
 autoplot(tree_frogs_model_st)
 
-## ----members-plot-------------------------------------------------------------
+## ----members-plot, fig.alt = "A similarly formatted ggplot line plot, showing that greater numbers of members result in higher accuracy."----
 autoplot(tree_frogs_model_st, type = "members")
 
-## ----weight-plot--------------------------------------------------------------
+## ----weight-plot, fig.alt = "A ggplot bar plot, giving the stacking coefficient on the x axis and member on the y axis. Bars corresponding to neural networks are shown in red, while random forest bars are shown in blue. Generally, the neural network tends to accentuate features of the 'low' response, while the random forest does so for the 'mid' response."----
 autoplot(tree_frogs_model_st, type = "weights")
 
 ## -----------------------------------------------------------------------------

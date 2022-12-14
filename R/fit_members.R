@@ -20,9 +20,7 @@
 #' 
 #' @template note_example_data
 #' 
-#' @examplesIf rlang::is_installed("ranger") & rlang::is_installed("kernlab")
-#' 
-#' \donttest{
+#' @examplesIf (stacks:::should_run_examples(suggests = c("ranger", "kernlab")))
 #' 
 #' # see the "Example Data" section above for
 #' # clarification on the objects used in these examples!
@@ -63,8 +61,6 @@
 #'   
 #' log_st
 #' 
-#' }
-#' 
 #' @family core verbs
 #' @export
 fit_members <- function(model_stack, ...) {
@@ -100,17 +96,38 @@ fit_members <- function(model_stack, ...) {
   if (model_stack[["mode"]] == "regression") {
     members_map <- 
       tibble::enframe(model_stack[["cols_map"]]) %>%
-      tidyr::unnest(cols = value) %>%
-      dplyr::full_join(metrics_dict, by = c("value" = ".config"))
+      tidyr::unnest(cols = value)
+    if (utils::packageVersion("dplyr") >= "1.0.99.9000") {
+      members_map <- members_map %>%
+        dplyr::full_join(metrics_dict, by = c("value" = ".config"), multiple = "all")
+    } else {
+      members_map <- members_map %>%
+        dplyr::full_join(metrics_dict, by = c("value" = ".config"))
+    }
   } else {
     members_map <- 
       tibble::enframe(model_stack[["cols_map"]]) %>%
-      tidyr::unnest(cols = value) %>%
-      dplyr::full_join(member_dict, by = c("value" = "old")) %>%
+      tidyr::unnest(cols = value)
+    if (utils::packageVersion("dplyr") >= "1.0.99.9000") {
+      members_map <- members_map %>%
+        dplyr::full_join(member_dict, by = c("value" = "old"), multiple = "all")
+    } else {
+      members_map <- members_map %>%
+        dplyr::full_join(member_dict, by = c("value" = "old"))
+    }
+    
+    members_map <- members_map %>%
       dplyr::filter(!is.na(new)) %>%
       dplyr::select(name, value = new) %>%
-      dplyr::filter(!duplicated(.$value)) %>%
-      dplyr::full_join(metrics_dict, by = c("value" = ".config"))
+      dplyr::filter(!duplicated(.$value))
+    
+    if (utils::packageVersion("dplyr") >= "1.0.99.9000") {
+      members_map <- members_map %>%
+        dplyr::full_join(metrics_dict, by = c("value" = ".config"), multiple = "all")
+    } else {
+      members_map <- members_map %>%
+        dplyr::full_join(metrics_dict, by = c("value" = ".config"))
+    }
   }
   
   if (foreach::getDoParWorkers() > 1) {
@@ -206,21 +223,23 @@ sanitize_classification_names <- function(model_stack, member_names) {
 check_model_stack <- function(model_stack) {
   if (inherits(model_stack, "model_stack")) {
     if (!is.null(model_stack[["member_fits"]])) {
-      glue_warn(
-        "The members in the supplied `model_stack` have already been fitted ",
-        "and need not be fitted again."
+      cli_warn(
+        "The members in the supplied {.arg model_stack} have already been fitted 
+         and need not be fitted again."
       )
     }
     
     return(invisible(TRUE))
   } else if (inherits(model_stack, "data_stack")) {
-    glue_stop(
-      "The supplied `model_stack` argument is a data stack rather than ",
-      "a model stack. Did you forget to first evaluate the ensemble's ",
-      "stacking coefficients with `blend_predictions()`?"
+    cli_abort(
+      "The supplied {.arg model_stack} argument is a data stack rather than 
+       a model stack. Did you forget to first evaluate the ensemble's 
+       stacking coefficients with 
+      {.help [`blend_predictions()`](stacks::blend_predictions)}?",
+      call = caller_env()
     )
   } else {
-    check_inherits(model_stack, "model_stack")
+    check_inherits(model_stack, "model_stack", call = caller_env())
   }
 }
 
@@ -245,7 +264,7 @@ check_for_required_packages <- function(x) {
   )
   
   if (any(!installed)) {
-    error_needs_install(pkgs, installed)
+    error_needs_install(pkgs, installed, call = caller_env())
   }
 
   purrr::map(
@@ -258,21 +277,13 @@ check_for_required_packages <- function(x) {
 
 # takes in a vector of package names and a logical vector giving
 # whether or not each is installed
-error_needs_install <- function(pkgs, installed) {
-  plural <- sum(!installed) != 1
+error_needs_install <- function(pkgs, installed, call) {
+  need_install <- pkgs[!installed]
   
-  last_sep <- if (sum(!installed) == 2) {"` and `"} else {"`, and `"}
-  
-  need_install <- paste0(
-    "`",
-    glue::glue_collapse(pkgs[!installed], sep = "`, `", last = last_sep),
-    "`"
-  )
-  
-  glue_stop(
-    "The following package{if (plural) 's' else ''} ",
-    "need{if (plural) '' else 's'} to be installed before ",
-    "fitting members: {need_install}"
+  cli_abort(
+    "{cli::qty(need_install)}The package{?s} {.pkg {need_install}} need{?s/} to be 
+     installed before fitting members.",
+    call = call
   )
 }
 
