@@ -104,7 +104,7 @@ predict.model_stack <- function(object, new_data, type = NULL, members = FALSE,
           names(object[["member_fits"]]),
           parse_member_probs,
           member_preds,
-          attr(new_data[[object[["outcome"]]]], "levels")
+          levels(object[["data_stack"]][[object[["outcome"]]]])
         )
     }
     res <- dplyr::bind_cols(res, member_preds)
@@ -163,8 +163,6 @@ predict_members_regression <- function(model_stack, coefs, new_data, opts, type)
 }
 
 predict_members_classification <- function(model_stack, coefs, new_data, opts, type) {
-  levels <- attr(new_data[[model_stack[["outcome"]]]], "levels")
-  
   member_preds <- 
     purrr::map(
       model_stack[["member_fits"]],
@@ -200,4 +198,46 @@ check_fitted <- function(model_stack) {
       call = caller_env()
     )
   }
+}
+
+#' @importFrom generics augment
+#' @export
+generics::augment
+
+#' Augment a model stack
+#' 
+#' @param x A fitted model stack; see [fit_members()].
+#' @inheritParams predict.model_stack
+#' @param ... Additional arguments passed to `predict.model_stack`. In
+#' particular, see `type` and `members`.
+#' 
+#' @seealso The [collect_parameters()] function is analogous to a [`tidy()`][generics::tidy()] 
+#' method for model stacks.
+#' 
+#' @method augment model_stack
+#' @name augment.model_stack
+#' @export
+augment.model_stack <- function(x, new_data, ...) {
+  dots <- list(...)
+  outcome <- x[["outcome"]]
+  member_cols <- unlist(x[["cols_map"]])
+  
+  res <- dplyr::bind_cols(new_data, predict(x, new_data = new_data, ...))
+  
+  if (mode_is_regression(x) & isTRUE(dots[["members"]])) {
+    res <- dplyr::rename_with(res, ~paste0(".pred_", .x), any_of(unname(member_cols)))
+  }
+  
+  if (mode_is_regression(x) & outcome %in% colnames(new_data)) {
+    res <- 
+      dplyr::mutate(
+        res, 
+        across(
+          starts_with(".pred"),
+          ~ !!rlang::sym(outcome) - .x,
+          .names = ".resid{gsub('.pred', '', .col)}")
+      )
+  }
+  
+  tibble::as_tibble(res)
 }

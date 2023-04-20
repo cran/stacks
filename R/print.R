@@ -82,10 +82,12 @@ top_coefs <- function(x, penalty = x$penalty$penalty, n = 10) {
   n <- min(n, nrow(betas))
   
   sub_models <-
-    purrr::map_dfr(x$cols_map, ~ tibble::tibble(terms = .x), .id = "model_name")
+    purrr::map(x$cols_map, ~ tibble::tibble(terms = .x)) %>%
+    purrr::list_rbind(names_to = "model_name")
   model_types <- 
     purrr::map(x$model_defs, workflows::extract_spec_parsnip) %>% 
-    purrr::map_dfr(~ tibble::tibble(model_type = class(.x)[1]), .id = "model_name")
+    purrr::map(~ tibble::tibble(model_type = class(.x)[1])) %>%
+    purrr::list_rbind(names_to = "model_name")
   res <- 
     dplyr::left_join(betas, sub_models, by = "terms") %>% 
     dplyr::left_join(model_types, by = "model_name") %>% 
@@ -117,6 +119,7 @@ top_coefs <- function(x, penalty = x$penalty$penalty, n = 10) {
       #   ),
       #   class = gsub(".pred_", x = class, rep = "")
       # ) %>%
+      dplyr::mutate(class = factor(class, levels = pred_levels)) %>%
       dplyr::select(member = terms, type = model_type, weight = estimate, class)
   } else {
     res <- dplyr::select(res, member = terms, type = model_type, weight = estimate)
@@ -140,15 +143,19 @@ member_summary <- function(x, penalty = x$penalty$penalty) {
   betas <- 
     .get_glmn_coefs(x$coefs$fit, penalty = penalty) %>% 
     dplyr::filter(terms != "(Intercept)")
-  all_terms <- unique(betas$terms)
+  all_terms <- length(unique(betas$terms))
   used_betas <- dplyr::filter(betas, estimate != 0)
   used_terms <- nrow(used_betas)
   
-  msg <- paste0("\nOut of ", length(all_terms), " possible candidate members, the ",
-                "ensemble retained ", used_terms, ".",
-                "\nPenalty: ", x$penalty$penalty, ".",
-                "\nMixture: ", x$penalty$mixture, ".")
-  rlang::inform(msg)
+  msg <- c(
+    "",
+    "Out of {all_terms} possible candidate members, the ensemble \\
+     retained {used_terms}.",
+    "Penalty: {.val {x$penalty$penalty}}.",
+    "Mixture: {.val {x$penalty$mixture}}."
+  )
+
+  cli::cli_bullets(msg)
   if (any(names(betas) == "class")) {
     n_classes <- length(unique(betas$class))
     beta_per_class <- 
@@ -159,9 +166,9 @@ member_summary <- function(x, penalty = x$penalty$penalty) {
       dplyr::pull(n) %>% 
       mean() %>% 
       round(2) 
-    msg <- paste0("Across the ", n_classes, " classes, there are an average ",
-                  "of ", beta_per_class, " coefficients per class.")
-    rlang::inform(msg)
+    msg <- "Across the {n_classes} classes, there are an average \\
+            of {beta_per_class} coefficients per class."
+    cli::cli_bullets(msg)
   }
   invisible(NULL)
 }

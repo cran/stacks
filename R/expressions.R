@@ -162,7 +162,7 @@ stack_predict.lognet_prob <- function(x, data, ...) {
 
 multi_net_engine <- function(x, data, ...) {
   res <- 
-    purrr::map_dfc(x$.pred, rlang::eval_tidy, data = data) %>% 
+    purrr::map_dfc(x$.pred, rlang::eval_tidy, data = data) %>%
     multi_net_helper()
 }
 

@@ -403,8 +403,8 @@ member_preds <-
 Now, evaluating the root mean squared error from each model:
 
 ```{r}
-map_dfr(member_preds, rmse, truth = latency, data = member_preds) %>%
-  mutate(member = colnames(member_preds))
+map(member_preds, rmse_vec, truth = member_preds$latency) %>%
+  as_tibble()
 ```
 
 As we can see, the stacked ensemble outperforms each of the member models, though is closely followed by one of its members.

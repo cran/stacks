@@ -107,7 +107,8 @@ nnet_rec <-
 
 nnet_wflow <- 
   tree_frogs_wflow %>%
-  add_model(nnet_spec)
+  add_model(nnet_spec) %>%
+  update_recipe(nnet_rec)
 
 nnet_res <-
   tune_grid(
@@ -170,9 +171,11 @@ tree_frogs_pred <-
 
 tree_frogs_pred
 
-map_dfr(
-  setNames(colnames(tree_frogs_pred), colnames(tree_frogs_pred)),
+map(
+  colnames(tree_frogs_pred),
   ~mean(tree_frogs_pred$reflex == pull(tree_frogs_pred, .x))
 ) %>%
+  set_names(colnames(tree_frogs_pred)) %>%
+  as_tibble() %>%
   pivot_longer(c(everything(), -reflex))
 

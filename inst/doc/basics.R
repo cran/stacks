@@ -260,6 +260,6 @@ member_preds <-
   bind_cols(predict(tree_frogs_model_st, tree_frogs_test, members = TRUE))
 
 ## -----------------------------------------------------------------------------
-map_dfr(member_preds, rmse, truth = latency, data = member_preds) %>%
-  mutate(member = colnames(member_preds))
+map(member_preds, rmse_vec, truth = member_preds$latency) %>%
+  as_tibble()
 

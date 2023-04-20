@@ -24,7 +24,7 @@
 #' 
 #' - `tune_results`: An object outputted from [tune::tune_grid()], 
 #' [tune::tune_bayes()], or [tune::fit_resamples()].
-#' - `workflow_set`: An object outputted from [workflowsets::workflow_map()].
+#' - `workflow_set`: An object outputted from `workflowsets::workflow_map()`.
 #' This approach allows for supplying multiple sets of candidate members 
 #' with only one call to `add_candidates`. See the "Stacking With Workflow Sets"
 #' article on the [package website](https://stacks.tidymodels.org/) for example code!
@@ -247,7 +247,7 @@ add_candidates.default <- function(data_stack, candidates, name, ...) {
       purrr::pluck("metrics") %>%
       attributes() %>%
       purrr::pluck("metrics") %>%
-      purrr::map_chr(~class(.x)[[1]]) %>%
+      purrr::map_chr(class_1) %>%
       unname()
     
     if (!"prob_metric" %in% metric_types) {
@@ -263,15 +263,17 @@ add_candidates.default <- function(data_stack, candidates, name, ...) {
   model_defs <- attr(stack, "model_defs")
   model_metrics <- attr(stack, "model_metrics")
   
-  model_defs[[name]] <- 
-    attr(candidates, "workflow") %>% 
-    stack_workflow(call = caller_env())
+  model_defs[[name]] <- attr(candidates, "workflow")
   model_metrics[[name]] <- tune::collect_metrics(candidates)
   
   attr(stack, "model_defs") <- model_defs
   attr(stack, "model_metrics") <- model_metrics
   
   stack
+}
+
+class_1 <- function(.x) {
+  class(.x)[[1]]
 }
 
 # checks that the training data in a newly added candidate
@@ -390,31 +392,6 @@ update_stack_data <- function(stack, new_data) {
     new_data,
     class = c("data_stack", class(new_data))
   )
-}
-
-# takes in a workflow and returns a minimal workflow for
-# use in the stack
-stack_workflow <- function(x, call) {
-  res <-
-    workflows::workflow() %>%
-    workflows::add_model(workflows::extract_spec_parsnip(x))
-  
-  pre <- workflows::extract_preprocessor(x)
-  
-  if (inherits(pre, "formula")) {
-    res <- res %>% workflows::add_formula(pre)
-  } else if (inherits(pre, "recipe")) {
-    res <- res %>% workflows::add_recipe(pre)
-  } else if (inherits(pre, "workflow_variables")) {
-    res <- res %>% workflows::add_variables(variables = pre)
-  } else {
-    cli_abort(
-      "Can't add a preprocessor of class '{class(pre)[1]}'",
-      call = call
-    )
-  }
-  
-  res
 }
 
 check_add_data_stack <- function(data_stack) {

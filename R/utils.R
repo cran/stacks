@@ -8,7 +8,8 @@ dplyr::`%>%`
 #' @importFrom cli cli_inform
 #' @importFrom cli cli_warn
 #' @importFrom cli cli_abort
-#' @importFrom rlang caller_env
+#' @importFrom rlang caller_env %||%
+#' @import workflows
 
 # Global Variables
 # ------------------------------------------------------------------------
@@ -19,6 +20,7 @@ utils::globalVariables(c(
   ".metric",
   ".pred",
   ".pred_class",
+  "across",
   "any_of",
   "as.formula",
   "assess_object",
@@ -51,6 +53,7 @@ utils::globalVariables(c(
   "setNames",
   "splits",
   "stack",
+  "starts_with",
   "terms",
   "type",
   "value",
@@ -117,6 +120,10 @@ should_run_examples <- function(suggests = NULL) {
   has_needed_installs && !is_cran_check()
 }
 
+mode_is_regression <- function(x) {
+  isTRUE(x[["mode"]] %in% c("regression", "censored regression"))
+}
+
 
 # Getters
 # -----------------------------------------------------------------------
@@ -144,8 +151,11 @@ should_run_examples <- function(suggests = NULL) {
   x <- as.matrix(x)
   colnames(x) <- "estimate"
   rn <- rownames(x)
-  x <- tibble::as_tibble(x) %>% dplyr::mutate(terms = rn, penalty = penalty)
-  x <- dplyr::select(x, terms, estimate, penalty)
+  x <- tibble::as_tibble(x)
+  x$terms <- rn
+  x$penalty <- penalty
+  x <- x[, c("terms", "estimate", "penalty")]
+
   if (is.list(x$estimate)) {
     x$estimate <- purrr::map(x$estimate, ~ tibble::as_tibble(as.matrix(.x), rownames = "terms"))
     x <- tidyr::unnest(x, cols = c(estimate), names_repair = "minimal")
@@ -154,8 +164,7 @@ should_run_examples <- function(suggests = NULL) {
   x
 }
 
-# quiet R-CMD-check NOTEs that workflowsets and yardstick are unused
+# quiet R-CMD-check NOTEs that yardstick is unused
 # (see example data .Rmds for usage)
 #' @importFrom yardstick metric_set
-#' @importFrom workflowsets workflow_set
 NULL
