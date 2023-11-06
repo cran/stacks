@@ -1,6 +1,6 @@
 Package: stacks
 Title: Tidy Model Stacking
-Version: 1.0.2
+Version: 1.0.3
 Authors@R: c(
     person("Simon", "Couch", , "simon.couch@posit.co", role = c("aut", "cre")),
     person("Max", "Kuhn", , "max@posit.co", role = "aut"),
@@ -31,10 +31,10 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2023-04-20 23:06:07 UTC; simoncouch
+Packaged: 2023-11-06 16:11:30 UTC; simoncouch
 Author: Simon Couch [aut, cre],
   Max Kuhn [aut],
   Posit Software, PBC [cph, fnd]
 Maintainer: Simon Couch <simon.couch@posit.co>
 Repository: CRAN
-Date/Publication: 2023-04-20 23:40:02 UTC
+Date/Publication: 2023-11-06 17:00:02 UTC

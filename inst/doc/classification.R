@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -21,7 +21,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 if (rlang::is_installed("ranger") && 
     rlang::is_installed("nnet") &&
     rlang::is_installed("kernlab")) {
@@ -34,14 +34,14 @@ knitr::opts_chunk$set(
   eval = run
 )
 
-## ---- message = FALSE, warning = FALSE----------------------------------------
+## ----message = FALSE, warning = FALSE-----------------------------------------
 data("tree_frogs")
 
 # subset the data
 tree_frogs <- tree_frogs %>%
   select(-c(clutch, latency))
 
-## ---- message = FALSE, warning = FALSE, fig.alt = "A ggplot scatterplot with categorical variable treatment, embryo age in seconds on the y axis, and points colored by response. The ages range from 350,000 to 500,000 seconds, and the two treatments are control and gentamicin. There are three responses: low, mid, and full. All of the embryos beyond a certain age have a full response, while the low and mid responses are well-intermixed regardless of age or treatment."----
+## ----message = FALSE, warning = FALSE, fig.alt = "A ggplot scatterplot with categorical variable treatment, embryo age in seconds on the y axis, and points colored by response. The ages range from 350,000 to 500,000 seconds, and the two treatments are control and gentamicin. There are three responses: low, mid, and full. All of the embryos beyond a certain age have a full response, while the low and mid responses are well-intermixed regardless of age or treatment."----
 theme_set(theme_bw())
 
 ggplot(tree_frogs) +
@@ -73,7 +73,7 @@ tree_frogs_wflow <-
 ## -----------------------------------------------------------------------------
 ctrl_grid <- control_stack_grid()
 
-## ---- message = FALSE, warning = FALSE----------------------------------------
+## ----message = FALSE, warning = FALSE-----------------------------------------
 rand_forest_spec <- 
   rand_forest(
     mtry = tune(),
@@ -95,7 +95,7 @@ rand_forest_res <-
     control = ctrl_grid
   )
 
-## ---- message = FALSE, warning = FALSE----------------------------------------
+## ----message = FALSE, warning = FALSE-----------------------------------------
 nnet_spec <-
   mlp(hidden_units = tune(), penalty = tune(), epochs = tune()) %>%
   set_mode("classification") %>%
@@ -118,7 +118,7 @@ nnet_res <-
     control = ctrl_grid
   )
 
-## ---- message = FALSE, warning = FALSE----------------------------------------
+## ----message = FALSE, warning = FALSE-----------------------------------------
 tree_frogs_model_st <- 
   # initialize the stack
   stacks() %>%
@@ -144,12 +144,12 @@ autoplot(tree_frogs_model_st, type = "weights")
 ## -----------------------------------------------------------------------------
 collect_parameters(tree_frogs_model_st, "rand_forest_res")
 
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  tree_frogs_pred <-
 #    tree_frogs_test %>%
 #    bind_cols(predict(tree_frogs_model_st, ., type = "prob"))
 
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  yardstick::roc_auc(
 #    tree_frogs_pred,
 #    truth = reflex,
