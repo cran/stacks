@@ -18,6 +18,8 @@ library(kernlab)
 skip_if_not_installed("nnet")
 library(nnet)
 
+skip_if_not_installed("yardstick")
+
 test_that("stack can add candidates (regression)", {
   skip_on_cran()
   
@@ -206,6 +208,16 @@ test_that("add_candidates errors informatively with bad arguments", {
   
   expect_snapshot(
     stacks() %>% add_candidates(log_res),
+    error = TRUE
+  )
+  
+  # fake a censored regression tuning result
+  wf <- attr(reg_res_lr, "workflow")
+  wf$fit$actions$model$spec$mode <- "censored regression"
+  attr(reg_res_lr, "workflow") <- wf
+  
+  expect_snapshot(
+    stacks() %>% add_candidates(reg_res_lr),
     error = TRUE
   )
   

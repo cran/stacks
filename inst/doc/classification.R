@@ -14,7 +14,6 @@ library(rsample)
 library(parsnip)
 library(workflows)
 library(recipes)
-library(yardstick)
 library(stacks)
 library(purrr)
 library(dplyr)
@@ -24,8 +23,10 @@ library(ggplot2)
 ## ----include = FALSE----------------------------------------------------------
 if (rlang::is_installed("ranger") && 
     rlang::is_installed("nnet") &&
-    rlang::is_installed("kernlab")) {
+    rlang::is_installed("kernlab") &&
+    rlang::is_installed("yardstick")) {
   run <- TRUE
+  library(yardstick)
 } else {
   run <- FALSE
 }

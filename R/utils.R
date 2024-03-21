@@ -121,7 +121,7 @@ should_run_examples <- function(suggests = NULL) {
 }
 
 mode_is_regression <- function(x) {
-  isTRUE(x[["mode"]] %in% c("regression", "censored regression"))
+  isTRUE(x[["mode"]] %in% "regression")
 }
 
 
@@ -163,8 +163,3 @@ mode_is_regression <- function(x) {
   }
   x
 }
-
-# quiet R-CMD-check NOTEs that yardstick is unused
-# (see example data .Rmds for usage)
-#' @importFrom yardstick metric_set
-NULL
