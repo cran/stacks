@@ -1,7 +1,7 @@
-1e656f083eeee834bc41c4f56f1fa06a *DESCRIPTION
+12c140d04ea61c8686a5ceb64903293a *DESCRIPTION
 b99aa3d09ea497dbe2b9a4c36782cdec *LICENSE
 5b5f111b46b9a1640215abb5efec9064 *NAMESPACE
-f47dac5f1573bea94ee11917d5b3c659 *NEWS.md
+0e4df460c1688006d9b3631fcfb8d467 *NEWS.md
 51fabde062363adc9396b13420880a5d *R/add_candidates.R
 438ea00cc387664dfbf6336ed8169c2d *R/blend_predictions.R
 df3dc37e707eb9a20ebd53b2ebd6da4a *R/butcher.R
@@ -37,10 +37,10 @@ f67614c06079c7824f3539dd231538b1 *data/tree_frogs_class_test.rda
 fa2fb7dd361df6858aca186ab03f0334 *data/tree_frogs_reg_test.rda
 5f0015d25168256b2eebf893751aee5e *inst/doc/basics.R
 a2645aadb6083880d170de84366fbc14 *inst/doc/basics.Rmd
-5199e6597988a53ea4961b0b1aec7a5e *inst/doc/basics.html
+632c58bc38604db0a9397e3c4bcf3b4c *inst/doc/basics.html
 ce1593d2bf0994d190df4afca48c08c1 *inst/doc/classification.R
 2e2d2902d3935d2c256ad674a3ce092d *inst/doc/classification.Rmd
-e87e7624abf6b2eaeb37ee895dfa99f7 *inst/doc/classification.html
+2ee67ee64f04dd072ec359c4d9b59feb *inst/doc/classification.html
 b6d640c568f9d4db6f3ecd2f39f987c5 *man/add_candidates.Rd
 1120697d84d86abfbf8ad60ba6b85d89 *man/augment.model_stack.Rd
 ab7c8b7febc282e4619c0e07a66de4d6 *man/autoplot.linear_stack.Rd
